@@ -6,6 +6,7 @@ const net = require('net');
 const crypto = require('crypto');
 const util = require('util');
 const path = require('path');
+const { EventEmitter, once } = require('events');
 const earl = require('@devsnek/earl');
 const { DEFAULT_DFLAGS } = require('./flags');
 
@@ -39,7 +40,7 @@ function frame2(data) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const debuglog = util.debuglog('');
+const debuglog = util.debuglog('dist-conn');
 
 const COOKIE = fs.readFileSync(path.join(os.homedir(), '.erlang.cookie'), 'utf8').trim();
 
@@ -61,7 +62,7 @@ class EPMDClient {
   }
 
   onClose() {
-    // console.log('client close');
+    debuglog('client close');
   }
 
   onData(data) {
@@ -115,8 +116,10 @@ class EPMDClient {
   }
 }
 
-class NodeConnection {
+class NodeConnection extends EventEmitter {
   constructor(dist, socket, lowestVersion, name) {
+    super();
+
     this.dist = dist;
     this.socket = socket;
     this.lowestVersion = lowestVersion;
@@ -161,6 +164,8 @@ class NodeConnection {
 
   onClose() {
     this.cleanup();
+
+    this.emit('close');
   }
 
   onError(e) {
@@ -333,6 +338,7 @@ class NodeConnection {
     this.heartbeatInterval = setInterval(() => {
       this.socket.write(Buffer.from([0, 0, 0, 0]));
     }, 15);
+    this.emit('connected');
   }
 
   control(command, message) {
@@ -448,6 +454,8 @@ class Distribution {
       info.name,
     );
     node.sendName();
+
+    await once(node, 'connected');
 
     return node;
   }

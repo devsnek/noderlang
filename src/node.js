@@ -10,7 +10,7 @@ const { Distribution } = require('./distribution');
 const { ControlMessages } = require('./constants');
 
 const currentNode = new AsyncLocalStorage();
-const debuglog = util.debuglog('');
+const debuglog = util.debuglog('dist-node');
 
 function pidToId(pid) {
   return `${pid.creation}.${pid.id}.${pid.serial} @ ${pid.node}`;
@@ -49,6 +49,14 @@ class Node {
 
   handleControlMessage(control, message) {
     switch (control[0]) {
+      case ControlMessages.SEND: {
+        const unpacked = earl.unpack(message, {
+          mapToObject: false,
+          atomToString: false,
+        });
+        this.send(null, control[2], unpacked);
+        break;
+      }
       case ControlMessages.REG_SEND: {
         const unpacked = earl.unpack(message, {
           mapToObject: false,

@@ -1,6 +1,6 @@
 'use strict';
 
-const { tuple } = require('@devsnek/earl');
+const { tuple, Reference } = require('@devsnek/earl');
 const { self, spawn } = require('./process');
 const { Node, send } = require('./node');
 
@@ -42,7 +42,14 @@ class GenServer {
         try {
           mRef = node.monitor(pid, targetPid, mRef);
 
-          const message = tuple(Symbol('$gen_call'), tuple(Symbol('alias'), mRef), data);
+          const message = tuple(
+            Symbol('$gen_call'),
+            // TODO: I think this should be {pid, [:alias | mRef]} but
+            // but something about the references we're creating is making
+            // erlang unhappy and it can't respond to these calls.
+            tuple(pid, mRef),
+            data,
+          );
           send(targetPid, message);
 
           const response = yield;
@@ -57,7 +64,7 @@ class GenServer {
       });
     });
 
-    if (result?.[0]?.head?.[0] === Symbol('alias')) {
+    if (result?.[0] instanceof Reference) {
       return result[1];
     }
 
