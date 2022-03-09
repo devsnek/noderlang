@@ -44,9 +44,6 @@ class GenServer {
 
           const message = tuple(
             Symbol('$gen_call'),
-            // TODO: I think this should be {pid, [:alias | mRef]} but
-            // but something about the references we're creating is making
-            // erlang unhappy and it can't respond to these calls.
             tuple(pid, mRef),
             data,
           );

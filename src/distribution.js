@@ -87,7 +87,7 @@ class EPMDClient {
 
   handleAlive2Resp(result, creation) {
     if (result === 0) {
-      this.dist.creation = creation;
+      this.dist.handleAlive(creation);
     } else {
       throw new Error(`alive2 error: ${result}`);
     }
@@ -364,8 +364,10 @@ class NodeConnection extends EventEmitter {
   }
 }
 
-class Distribution {
+class Distribution extends EventEmitter {
   constructor(node) {
+    super();
+
     this.node = node;
 
     this.port = null;
@@ -392,6 +394,11 @@ class Distribution {
 
   onClose() {
     console.log('dist close');
+  }
+
+  handleAlive(creation) {
+    this.creation = creation;
+    this.emit('connected');
   }
 
   getNode(descriptor) {

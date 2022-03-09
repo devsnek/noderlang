@@ -26,6 +26,7 @@ exports.DFLAG_EXIT_PAYLOAD = 0x400000;
 exports.DFLAG_FRAGMENTS = 0x800000;
 exports.DFLAG_HANDSHAKE_23 = 0x1000000;
 exports.DFLAG_V4_NC = 0x400000000;
+exports.DFLAG_ALIAS = 1 << 35;
 
 const e = exports;
 exports.DEFAULT_DFLAGS = (
@@ -45,4 +46,5 @@ exports.DEFAULT_DFLAGS = (
   | e.DFLAGS_SEND_SENDER
   | e.DFLAG_HANDSHAKE_23
   | e.DFLAG_V4_NC
+  | e.DFLAG_ALIAS
 );

@@ -23,9 +23,11 @@ class Node {
 
     const node = new Node(name);
 
-    node.scope(() => {
-      NetKernel.startLink([], 'net_kernel');
-      spawn(f);
+    node.dist.once('connected', () => {
+      node.scope(() => {
+        NetKernel.startLink([], 'net_kernel');
+        spawn(f);
+      });
     });
 
     return node;
