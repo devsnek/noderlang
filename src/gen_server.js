@@ -1,6 +1,6 @@
 'use strict';
 
-const { tuple, Reference } = require('@devsnek/earl');
+const { tuple, Reference, ImproperList } = require('@devsnek/earl');
 const { self, spawn } = require('./process');
 const { Node, send } = require('./node');
 
@@ -40,7 +40,7 @@ class GenServer {
 
         let mRef;
         try {
-          mRef = node.monitor(pid, targetPid, mRef);
+          mRef = node.monitor(pid, targetPid);
 
           const message = tuple(
             Symbol('$gen_call'),

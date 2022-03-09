@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const os = require('os');
 const util = require('util');
 const earl = require('@devsnek/earl');
-const { Reference, Pid } = require('@devsnek/earl');
+const { tuple, Reference, Pid } = require('@devsnek/earl');
 const { AsyncLocalStorage } = require('async_hooks');
 const { Distribution } = require('./distribution');
 const { ControlMessages } = require('./constants');
@@ -43,6 +43,7 @@ class Node {
     this.pidCounter = 0;
     this.byId = new Map();
     this.byName = new Map();
+    this.byRef = new Map();
   }
 
   getByPid(pid) {
@@ -67,11 +68,34 @@ class Node {
         this.send(control[1], control[3], unpacked);
         break;
       }
+      case ControlMessages.SEND_SENDER: {
+        const unpacked = earl.unpack(message, {
+          mapToObject: false,
+          atomToString: false,
+        });
+        this.send(control[1], control[2], unpacked);
+        break;
+      }
+      case ControlMessages.ALIAS_SEND: {
+        const unpacked = earl.unpack(message, {
+          mapToObject: false,
+          atomToString: false,
+        });
+        this.send(control[1], control[2], unpacked);
+        break;
+      }
       case ControlMessages.MONITOR_P:
         this.monitor(control[1], control[2], control[3]);
         break;
       case ControlMessages.DEMONITOR_P:
-        this.monitor(control[1], control[2], control[3]);
+        this.demonitor(control[1], control[2], control[3]);
+        break;
+      case ControlMessages.MONITOR_P_EXIT:
+        this.send(
+          control[1],
+          control[2],
+          tuple('DOWN', control[3], Symbol('process'), control[1], control[4]),
+        );
         break;
       default:
         debuglog('Unknown control message', control);
@@ -102,6 +126,11 @@ class Node {
     this.byName.delete(process.name);
   }
 
+  alias(pid) {
+    const ref = new Reference(this.name, this.dist.creation, crypto.randomBytes(3));
+    this.byRef.set(ref.id, this.getByPid(pid));
+  }
+
   monitor(origin, target, existingRef) {
     const ref = existingRef ?? new Reference(this.name, this.dist.creation, crypto.randomBytes(3));
 
@@ -127,6 +156,8 @@ class Node {
   }
 
   demonitor(origin, target, ref) {
+    this.byRef.delete(ref.id);
+
     if (typeof target === 'symbol') {
       this.byName.get(target.description)?.removeMonitoredBy(origin, ref);
     } else if (target instanceof Pid) {
@@ -134,14 +165,14 @@ class Node {
         this.getByPid(target)?.removeMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target.node)
-          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target, ref]));
+          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target, ref]));
       }
     } else if (Array.isArray(target)) {
       if (target[1] === this.name) {
         this.byName.get(target[0].description).removeMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target[1])
-          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target[0], ref]));
+          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target[0], ref]));
       }
     }
   }
@@ -157,6 +188,21 @@ class Node {
         .then((node) => {
           node.control([
             ControlMessages.SEND_SENDER,
+            sender,
+            receiver,
+          ], message);
+        });
+      return;
+    }
+    if (receiver instanceof Reference) {
+      if (receiver.node === this.name) {
+        this.byRef.get(receiver.id)?.post(message);
+        return;
+      }
+      this.getNode(receiver.node)
+        .then((node) => {
+          node.control([
+            ControlMessages.ALIAS_SEND,
             sender,
             receiver,
           ], message);

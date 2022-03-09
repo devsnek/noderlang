@@ -142,7 +142,7 @@ class NodeConnection extends EventEmitter {
       data = new Uint8Array(1 + 8 + 4 + 2 + name.byteLength);
       const view = new DataView(data.buffer);
       view.setUint8(0, 'N'.charCodeAt(0));
-      view.setBigUint64(1, BigInt(DEFAULT_DFLAGS));
+      view.setBigUint64(1, DEFAULT_DFLAGS);
       view.setUint32(9, this.dist.creation);
       view.setUint16(13, name.byteLength);
       data.set(name, 15);
@@ -151,7 +151,7 @@ class NodeConnection extends EventEmitter {
       const view = new DataView(data.buffer);
       view.setUint8(0, 'n'.charCodeAt(0));
       view.setUint16(1, 5);
-      view.setUint32(3, DEFAULT_DFLAGS);
+      view.setUint32(3, Number(DEFAULT_DFLAGS));
       data.set(name, 7);
     } else {
       throw new Error(`unsupported version ${this.lowestVersion}`);

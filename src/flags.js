@@ -1,32 +1,32 @@
 'use strict';
 
-exports.DFLAG_PUBLISHED = 0x01;
-exports.DFLAG_ATOM_CACHE = 0x02;
-exports.DFLAG_EXTENDED_REFERENCES = 0x04;
-exports.DFLAG_DIST_MONITOR = 0x08;
-exports.DFLAG_FUN_TAGS = 0x10;
-exports.DFLAG_DIST_MONITOR_NAME = 0x20;
-exports.DFLAG_HIDDEN_ATOM_CACHE = 0x40;
-exports.DFLAG_NEW_FUN_TAGS = 0x80;
-exports.DFLAG_EXTENDED_PIDS_PORTS = 0x100;
-exports.DFLAG_EXPORT_PTR_TAG = 0x200;
-exports.DFLAG_BIT_BINARIES = 0x400;
-exports.DFLAG_NEW_FLOATS = 0x800;
-exports.DFLAG_UNICODE_IO = 0x1000;
-exports.DFLAG_DIST_HDR_ATOM_CACHE = 0x2000;
-exports.DFLAG_SMALL_ATOM_TAGS = 0x4000;
-exports.DFLAG_INTERNAL_TAGS = 0x8000;
-exports.DFLAG_UTF8_ATOMS = 0x10000;
-exports.DFLAG_MAP_TAG = 0x20000;
-exports.DFLAG_BIG_CREATION = 0x40000;
-exports.DFLAG_SEND_SENDER = 0x80000;
-exports.DFLAG_BIG_SEQTRACE_LABELS = 0x100000;
-exports.DFLAG_NO_MAGIC = 0x200000;
-exports.DFLAG_EXIT_PAYLOAD = 0x400000;
-exports.DFLAG_FRAGMENTS = 0x800000;
-exports.DFLAG_HANDSHAKE_23 = 0x1000000;
-exports.DFLAG_V4_NC = 0x400000000;
-exports.DFLAG_ALIAS = 1 << 35;
+exports.DFLAG_PUBLISHED = 1n << 0n;
+exports.DFLAG_ATOM_CACHE = 1n << 1n;
+exports.DFLAG_EXTENDED_REFERENCES = 1n << 2n;
+exports.DFLAG_DIST_MONITOR = 1n << 3n;
+exports.DFLAG_FUN_TAGS = 1n << 4n;
+exports.DFLAG_DIST_MONITOR_NAME = 1n << 5n;
+exports.DFLAG_HIDDEN_ATOM_CACHE = 1n << 6n;
+exports.DFLAG_NEW_FUN_TAGS = 1n << 7n;
+exports.DFLAG_EXTENDED_PIDS_PORTS = 1n << 8n;
+exports.DFLAG_EXPORT_PTR_TAG = 1n << 9n;
+exports.DFLAG_BIT_BINARIES = 1n << 10n;
+exports.DFLAG_NEW_FLOATS = 1n << 11n;
+exports.DFLAG_UNICODE_IO = 1n << 12n;
+exports.DFLAG_DIST_HDR_ATOM_CACHE = 1n << 13n;
+exports.DFLAG_SMALL_ATOM_TAGS = 1n << 14n;
+exports.DFLAG_INTERNAL_TAGS = 1n << 15n;
+exports.DFLAG_UTF8_ATOMS = 1n << 16n;
+exports.DFLAG_MAP_TAG = 1n << 17n;
+exports.DFLAG_BIG_CREATION = 1n << 18n;
+exports.DFLAG_SEND_SENDER = 1n << 19n;
+exports.DFLAG_BIG_SEQTRACE_LABELS = 1n << 20n;
+exports.DFLAG_NO_MAGIC = 1n << 21n;
+exports.DFLAG_EXIT_PAYLOAD = 1n << 22n;
+exports.DFLAG_FRAGMENTS = 1n << 23n;
+exports.DFLAG_HANDSHAKE_23 = 1n << 24n;
+exports.DFLAG_V4_NC = 1n << 34n;
+exports.DFLAG_ALIAS = 1n << 35n;
 
 const e = exports;
 exports.DEFAULT_DFLAGS = (
@@ -43,7 +43,7 @@ exports.DEFAULT_DFLAGS = (
   | e.DFLAG_UTF8_ATOMS
   | e.DFLAG_MAP_TAG
   | e.DFLAG_BIG_CREATION
-  | e.DFLAGS_SEND_SENDER
+  | e.DFLAG_SEND_SENDER
   | e.DFLAG_HANDSHAKE_23
   | e.DFLAG_V4_NC
   | e.DFLAG_ALIAS
