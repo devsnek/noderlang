@@ -1,7 +1,7 @@
 'use strict';
 
-const { tuple, Reference, ImproperList } = require('@devsnek/earl');
-const { self, spawn } = require('./process');
+const { tuple } = require('@devsnek/earl');
+const { Process, self, spawn } = require('./process');
 const { Node, send } = require('./node');
 
 class GenServer {
@@ -29,43 +29,27 @@ class GenServer {
 
   static async call(targetPid, data, timeout = 5000) {
     const node = Node.get();
+    const process = Process.get();
 
-    const result = await new Promise((resolve, reject) => {
-      if (timeout !== Infinity) {
-        setTimeout(() => reject(new Error('call timed out')), timeout);
-      }
+    let mRef;
+    try {
+      mRef = node.monitor(process.pid, targetPid);
 
-      spawn(async function* innerGen() {
-        const pid = self();
+      const message = tuple(
+        Symbol('$gen_call'),
+        tuple(process.pid, mRef),
+        data,
+      );
+      send(targetPid, message);
 
-        let mRef;
-        try {
-          mRef = node.monitor(pid, targetPid);
+      const result = await process.receive((m) => mRef.eq(m[0]), timeout);
 
-          const message = tuple(
-            Symbol('$gen_call'),
-            tuple(pid, mRef),
-            data,
-          );
-          send(targetPid, message);
-
-          const response = yield;
-          resolve(response);
-        } catch (e) {
-          reject(e);
-        } finally {
-          if (mRef) {
-            node.demonitor(pid, targetPid, mRef);
-          }
-        }
-      });
-    });
-
-    if (result?.[0] instanceof Reference) {
       return result[1];
+    } finally {
+      if (mRef) {
+        node.demonitor(process.pid, targetPid, mRef);
+      }
     }
-
-    return result;
   }
 
   static async cast(pid, data) {

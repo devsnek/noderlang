@@ -7,6 +7,6 @@
   "author": "snek",
   "license": "MIT",
   "dependencies": {
-    "@devsnek/earl": "latest"
+    "@devsnek/earl": "github:devsnek/earl"
   }
 }

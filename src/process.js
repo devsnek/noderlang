@@ -10,33 +10,49 @@ function refToId(ref) {
   return `Ref<${ref.node}.${ref.creation}.${ref.id}>`;
 }
 
+const kNoValue = Symbol('kNoValue');
+
 class LinkedQueue {
   constructor() {
     this.size = 0;
-    this.item = null;
+    this.next = null;
     this.last = null;
+    this.subscriptions = new Set();
   }
 
   push(value) {
+    for (const matcher of this.subscriptions) {
+      if (matcher(value)) {
+        this.subscriptions.delete(matcher);
+        return;
+      }
+    }
     const next = { value, next: null };
-    if (this.item) {
+    if (this.next) {
       this.last.next = next;
       this.last = next;
     } else {
-      this.item = next;
+      this.next = next;
       this.last = next;
     }
     this.size += 1;
   }
 
-  shift() {
-    if (!this.item) {
-      return undefined;
+  take(matcher) {
+    let last = this;
+    let cursor = this.next;
+    while (cursor) {
+      if (matcher(cursor.value)) {
+        last.next = cursor.next;
+        if (!cursor.next) {
+          this.last = last;
+        }
+        return cursor.value;
+      }
+      last = cursor;
+      cursor = cursor.next;
     }
-    this.size -= 1;
-    const { value } = this.item;
-    this.item = this.item.next;
-    return value;
+    return kNoValue;
   }
 }
 
@@ -45,7 +61,6 @@ class Process {
     this.node = node;
     this.name = name;
     this.inbox = new LinkedQueue();
-    this.onInboxItem = null;
     this.monitoredBy = new Map();
 
     this.pid = this.node.register(this);
@@ -75,14 +90,14 @@ class Process {
 
     let message;
     while (true) {
-      const { done } = await currentProcess.run(
+      const { done, value: matcher } = await currentProcess.run(
         this,
         () => this.node.scope(() => gen.next(message)),
       );
       if (done) {
         break;
       }
-      message = await this.receive();
+      message = await this.receive(matcher);
     }
   }
 
@@ -91,22 +106,33 @@ class Process {
     this.onInboxItem?.();
   }
 
-  async receive(timeout) {
-    if (this.onInboxItem) {
-      throw new Error(`multiple receives ${this.pid[Symbol.for('nodejs.util.inspect.custom')]()}`);
+  receive(matcher = () => true, timeout = Infinity) {
+    const message = this.inbox.take(matcher);
+    if (message !== kNoValue) {
+      return Promise.resolve(message);
     }
-    if (this.inbox.size <= 0) {
-      await new Promise((resolve, reject) => {
-        this.onInboxItem = () => {
-          this.onInboxItem = null;
-          resolve();
-        };
-        if (timeout) {
-          setTimeout(() => reject(new Error('receive timed out')), timeout);
+
+    return new Promise((resolve, reject) => {
+      let timer;
+
+      const f = (v) => {
+        if (matcher(v)) {
+          clearTimeout(timer);
+          resolve(v);
+          return true;
         }
-      });
-    }
-    return this.inbox.shift();
+        return false;
+      };
+
+      if (timeout !== Infinity) {
+        timer = setTimeout(() => {
+          this.inbox.subscriptions.delete(f);
+          reject(new Error('receive timed out'));
+        }, timeout);
+      }
+
+      this.inbox.subscriptions.add(f);
+    });
   }
 
   addMonitoredBy(ref, pid) {

@@ -57,12 +57,7 @@ class EPMDClient {
     });
 
     this.client.once('error', (e) => dist.emit('error', e));
-    this.client.once('close', this.onClose.bind(this));
     this.client.on('data', this.onData.bind(this));
-  }
-
-  onClose() {
-    debuglog('client close');
   }
 
   onData(data) {
@@ -338,7 +333,7 @@ class NodeConnection extends EventEmitter {
     this.heartbeatInterval = setInterval(() => {
       this.socket.write(Buffer.from([0, 0, 0, 0]));
     }, 15);
-    this.emit('connected');
+    this.emit('connect');
   }
 
   control(command, message) {
@@ -378,8 +373,8 @@ class Distribution extends EventEmitter {
 
     this.server = net.createServer((c) => new NodeConnection(this, c, LOWEST_VERSION));
 
-    this.server.once('error', this.onError.bind(this));
-    this.server.once('close', this.onClose.bind(this));
+    this.server.once('error', (e) => this.emit('error', e));
+    this.server.once('close', () => this.emit('close'));
 
     this.server.listen(0, () => {
       this.port = this.server.address().port;
@@ -388,17 +383,9 @@ class Distribution extends EventEmitter {
     });
   }
 
-  onError(e) {
-    console.log('dist error', e);
-  }
-
-  onClose() {
-    console.log('dist close');
-  }
-
   handleAlive(creation) {
     this.creation = creation;
-    this.emit('connected');
+    this.emit('connect');
   }
 
   getNode(descriptor) {
@@ -407,6 +394,7 @@ class Distribution extends EventEmitter {
     }
 
     const promise = this.makeNode(descriptor);
+    promise.catch(() => debuglog('Failed to connect to node %s', descriptor));
     this.nodes.set(descriptor, promise);
     return promise;
   }
@@ -462,7 +450,7 @@ class Distribution extends EventEmitter {
     );
     node.sendName();
 
-    await once(node, 'connected');
+    await once(node, 'connect');
 
     return node;
   }

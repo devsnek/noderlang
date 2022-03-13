@@ -23,7 +23,7 @@ class Node {
 
     const node = new Node(name);
 
-    node.dist.once('connected', () => {
+    node.dist.once('connect', () => {
       node.scope(() => {
         NetKernel.startLink([], 'net_kernel');
         spawn(f);
@@ -127,12 +127,13 @@ class Node {
   }
 
   alias(pid) {
-    const ref = new Reference(this.name, this.dist.creation, crypto.randomBytes(3));
+    const ref = new Reference(this.name, this.dist.creation, [...crypto.randomBytes(3)]);
     this.byRef.set(ref.id, this.getByPid(pid));
   }
 
   monitor(origin, target, existingRef) {
-    const ref = existingRef ?? new Reference(this.name, this.dist.creation, crypto.randomBytes(3));
+    const ref = existingRef
+      ?? new Reference(this.name, this.dist.creation, [...crypto.randomBytes(3)]);
 
     if (typeof target === 'symbol') {
       this.byName.get(target.description)?.addMonitoredBy(origin, ref);
@@ -141,14 +142,16 @@ class Node {
         this.getByPid(target)?.addMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target.node)
-          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target, ref]));
+          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target, ref]))
+          .catch(() => {});
       }
     } else if (Array.isArray(target)) {
       if (target[1] === this.name) {
         this.byName.get(target[0].description).addMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target[1])
-          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target[0], ref]));
+          .then((node) => node.control([ControlMessages.MONITOR_P, origin, target[0], ref]))
+          .catch(() => {});
       }
     }
 
@@ -165,14 +168,16 @@ class Node {
         this.getByPid(target)?.removeMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target.node)
-          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target, ref]));
+          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target, ref]))
+          .catch(() => {});
       }
     } else if (Array.isArray(target)) {
       if (target[1] === this.name) {
         this.byName.get(target[0].description).removeMonitoredBy(origin, ref);
       } else {
         this.dist.getNode(target[1])
-          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target[0], ref]));
+          .then((node) => node.control([ControlMessages.DEMONITOR_P, origin, target[0], ref]))
+          .catch(() => {});
       }
     }
   }
@@ -191,7 +196,8 @@ class Node {
             sender,
             receiver,
           ], message);
-        });
+        })
+        .catch(() => {});
       return;
     }
     if (receiver instanceof Reference) {
@@ -206,7 +212,8 @@ class Node {
             sender,
             receiver,
           ], message);
-        });
+        })
+        .catch(() => {});
       return;
     }
     if (typeof receiver === 'symbol') {
@@ -227,7 +234,8 @@ class Node {
             Symbol(''),
             receiver[0],
           ], message);
-        });
+        })
+        .catch(() => {});
       return;
     }
 
